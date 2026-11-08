@@ -40,6 +40,13 @@ enum class diag_code : std::uint16_t {
   missing_key,
   unknown_key,
   out_of_range,
+  not_one_of,
+  invalid_schema,
+
+  // writer
+  invalid_key,
+  non_finite_float,
+  root_not_table,
 };
 
 struct diagnostic_note {

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstddef>
 #include <orchard/dot/base/diagnostic.hpp>
 #include <utility>
 
@@ -31,9 +32,9 @@ std::string_view code_name(diag_code code) noexcept {
   case diag_code::integer_overflow:
     return "integer_overflow";
   case diag_code::float_out_of_range:
-    return "float out of range";
+    return "float_out_of_range";
   case diag_code::nesting_too_deep:
-    return "nesting too deep";
+    return "nesting_too_deep";
 
   case diag_code::type_mismatch:
     return "type_mismatch";
@@ -43,6 +44,17 @@ std::string_view code_name(diag_code code) noexcept {
     return "unknown_key";
   case diag_code::out_of_range:
     return "out_of_range";
+  case diag_code::not_one_of:
+    return "not_one_of";
+  case diag_code::invalid_schema:
+    return "invalid_schema";
+
+  case diag_code::invalid_key:
+    return "invalid_key";
+  case diag_code::non_finite_float:
+    return "non_finite_float";
+  case diag_code::root_not_table:
+    return "root_not_table";
   }
 
   return "unknown";
@@ -78,6 +90,10 @@ std::string_view default_message(diag_code code) noexcept {
     return "floating point literal out of range";
   case diag_code::nesting_too_deep:
     return "nesting too deep";
+  case diag_code::not_one_of:
+    return "value is not one of the allowed values";
+  case diag_code::invalid_schema:
+    return "invalid schema";
 
   case diag_code::type_mismatch:
     return "value has the wrong type";
@@ -87,6 +103,13 @@ std::string_view default_message(diag_code code) noexcept {
     return "unknown key";
   case diag_code::out_of_range:
     return "value out of range";
+
+  case diag_code::invalid_key:
+    return "key cannot be written as an identifier";
+  case diag_code::non_finite_float:
+    return "nan and inf cannot be written";
+  case diag_code::root_not_table:
+    return "document root must be a table";
   }
 
   return "error";
@@ -156,6 +179,9 @@ void append_snippet(std::string &out, source_span span, const source_map &map) {
   if (!span.has_file())
     return;
 
+  constexpr std::size_t max_width = 100;
+  constexpr std::size_t lead = 20;
+
   const auto &file = map.get(span.file);
   const auto lc = file.locate(span.begin);
   const auto line = file.line_text(lc.line);
@@ -163,17 +189,35 @@ void append_snippet(std::string &out, source_span span, const source_map &map) {
 
   const std::size_t col0 = std::min<std::size_t>(lc.column - 1, line.size());
   std::size_t len = std::max<std::uint32_t>(span.size(), 1);
-  len = col0 < line.size() ? std::min(len, line.size() - col0) : 1;
+
+  std::size_t start = 0;
+  if (col0 + len > max_width)
+    start = col0 > lead ? col0 - lead : 0;
+  const std::size_t stop = std::min(line.size(), start + max_width);
+
+  len = col0 < stop ? std::min(len, stop - col0) : 1;
+  const bool cut_left = start > 0;
+  const bool cut_right = stop < line.size();
 
   out += ' ';
   out += number;
   out += " | ";
-  out += line;
+
+  if (cut_left)
+    out += "...";
+
+  if (cut_right)
+    out += "...";
+
   out += '\n';
 
   out += std::string(number.size() + 1, ' ');
   out += " | ";
-  for (std::size_t i = 0; i < col0; ++i)
+
+  if (cut_left)
+    out += "   ";
+
+  for (std::size_t i = start; i < col0; ++i)
     out += line[i] == '\t' ? '\t' : ' ';
 
   out += std::string(len, '^');

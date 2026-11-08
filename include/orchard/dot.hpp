@@ -5,3 +5,4 @@
 #include <orchard/dot/base/span.hpp>
 #include <orchard/dot/load.hpp>
 #include <orchard/dot/model/value.hpp>
+#include <orchard/dot/syntax/writer.hpp>

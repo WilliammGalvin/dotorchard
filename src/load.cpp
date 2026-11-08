@@ -14,6 +14,15 @@ std::expected<value, diagnostic> parse_source(const source_map &map,
   return parse(*tokens);
 }
 
+std::expected<value, diagnostic> parse_string(source_map &map, std::string name,
+                                              std::string text) {
+  auto id = map.add(name, std::move(text));
+  if (!id)
+    return std::unexpected(make_io_error(name, id.error()));
+
+  return parse_source(map, *id);
+}
+
 std::expected<value, diagnostic> load_path(source_map &map,
                                            const file_path &path) {
   if (path.extension() != ".orchard")
