@@ -1,0 +1,16 @@
+# project config
+name = "cherry";
+version = 1;
+opt_level = 2;
+pure = true;
+ratio = 0.75;
+features = ["simd", "lto"];
+
+target {
+  cpu = "znver4";
+  flags = ["-O2", "-fno-exceptions"];
+}
+
+deps {
+  petal = { path = "../petal"; };
+}
